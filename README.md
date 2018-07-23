@@ -1,6 +1,6 @@
 # CrashLogger for .NET
 CrashLogger is a simple online logger for your Project.
-[CrashLogger on NuGet](https://nuget.org). [Project](https://crashlogger.com/)
+[CrashLogger on NuGet](https://www.nuget.org/packages/CrashLogger/). [Project](https://crashlogger.com/)
 
 ## C#
 
