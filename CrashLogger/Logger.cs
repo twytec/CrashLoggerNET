@@ -8,33 +8,51 @@ using System.Threading.Tasks;
 namespace CrashLogger
 {
     /// <summary>
-    /// Static CrashLogger
+    /// CrashLogger
     /// </summary>
-    public static class Logger
+    public class Logger
     {
-        //private const string WebApiUrl = "http://localhost:5000/api/newcrash/create";
         private const string WebApiUrl = "https://crashlogger.com/api/newcrash/create";
-        private static string _appGuidId;
-        private static System.Collections.Concurrent.BlockingCollection<NewCrashItem> _list;
+        private string _appGuidId;
+        private System.Collections.Concurrent.BlockingCollection<CrashItem> _list;
+
         private static HttpClient _client;
-        private static bool _isSend = false;
-        private const int _maxLength = 10485760;
+        
+        /// <summary>
+        /// The max. size of CrashItem Value (File/Text)
+        /// </summary>
+        public const int MaxValueSize = 10485760;
+
+        /// <summary>
+        /// Max. length of CrashItem Name
+        /// </summary>
+        public const int MaxNameLength = 1024;
 
         #region Public
 
         /// <summary>
-        /// Init
+        /// Create new instanz of Logger
         /// </summary>
         /// <param name="appGuidId">AppGuidId</param>
-        public static void Init(string appGuidId)
+        public Logger(string appGuidId)
         {
             _appGuidId = appGuidId;
-            _list = new System.Collections.Concurrent.BlockingCollection<NewCrashItem>();
-            _client = new HttpClient();
-            _client.DefaultRequestHeaders.Accept.Clear();
-            _client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            _list = new System.Collections.Concurrent.BlockingCollection<CrashItem>
+            {
+                new CrashItem() { DataType = CrashDataType.File, Name = "OSDescription", Value = RuntimeInformation.OSDescription },
+                new CrashItem() { DataType = CrashDataType.File, Name = "FrameworkDescription", Value = RuntimeInformation.FrameworkDescription },
+                new CrashItem() { DataType = CrashDataType.File, Name = "OSArchitecture", Value = RuntimeInformation.OSArchitecture.ToString("g") },
+                new CrashItem() { DataType = CrashDataType.File, Name = "ProcessArchitecture", Value = RuntimeInformation.ProcessArchitecture.ToString("g") },
+            };
+            
+            if (_client == null)
+            {
+                _client = new HttpClient();
+                _client.DefaultRequestHeaders.Accept.Clear();
+                _client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
-            SendFromFileSystem();
+                SendFromFileSystem();
+            }
         }
 
         #region Add
@@ -44,29 +62,18 @@ namespace CrashLogger
         /// </summary>
         /// <param name="name">Any Name. Max. size 1024 chars</param>
         /// <param name="value">Any Value. Max. size 10MB</param>
-        public static void Add(string name, string value)
+        public void Add(string name, string value)
         {
-            CheckInit();
-
-            if (CheckSize(name, value) == false)
-                return;
-
-            _list.Add(new NewCrashItem() { DataType = CrashDataType.Text, Name = name, Value = value });
-        }
-
-        /// <summary>
-        /// Add File to Log
-        /// </summary>
-        /// <param name="filename">Filename with extension. Max. size 1024 chars</param>
-        /// <param name="file">Max. 10MB</param>
-        public static void Add(string filename, System.IO.Stream file)
-        {
-            CheckInit();
-            
-            using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+            try
             {
-                file.CopyTo(ms);
-                Add(filename, ms.ToArray());
+                if (CheckSize(name, value) == false)
+                    return;
+
+                _list.Add(new CrashItem() { DataType = CrashDataType.Text, Name = name, Value = value });
+            }
+            catch (Exception)
+            {
+                
             }
         }
 
@@ -75,15 +82,41 @@ namespace CrashLogger
         /// </summary>
         /// <param name="filename">Filename with extension. Max. size 1024 chars</param>
         /// <param name="file">Max. 10MB</param>
-        public static void Add(string filename, byte[] file)
+        public void Add(string filename, System.IO.Stream file)
         {
-            CheckInit();
+            try
+            {
+                using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+                {
+                    file.CopyTo(ms);
+                    Add(filename, ms.ToArray());
+                }
+            }
+            catch (Exception)
+            {
+                
+            }
+        }
 
-            if (CheckSize(filename, file: file) == false)
-                return;
+        /// <summary>
+        /// Add File to Log
+        /// </summary>
+        /// <param name="filename">Filename with extension. Max. size 1024 chars</param>
+        /// <param name="file">Max. 10MB</param>
+        public void Add(string filename, byte[] file)
+        {
+            try
+            {
+                if (CheckSize(filename, file: file) == false)
+                    return;
 
-            var v = Convert.ToBase64String(file);
-            _list.Add(new NewCrashItem() { DataType = CrashDataType.File, Name = filename, Value = v });
+                var v = Convert.ToBase64String(file);
+                _list.Add(new CrashItem() { DataType = CrashDataType.File, Name = filename, Value = v });
+            }
+            catch (Exception)
+            {
+                
+            }
         }
 
         #endregion
@@ -93,16 +126,21 @@ namespace CrashLogger
         /// <summary>
         /// Removes all elements
         /// </summary>
-        public static void Clear()
+        public void Clear()
         {
-            CheckInit();
-            
-            if (_list.Count == 0)
-                return;
-
-            for (int i = 0; i < _list.Count; i++)
+            try
             {
-                _list.Take();
+                if (_list.Count == 0)
+                    return;
+
+                for (int i = 0; i < _list.Count; i++)
+                {
+                    _list.Take();
+                }
+            }
+            catch (Exception)
+            {
+                
             }
         }
 
@@ -114,7 +152,7 @@ namespace CrashLogger
         /// Send to Api
         /// </summary>
         /// <param name="name">Any Name</param>
-        public static void Send(string name)
+        public void Send(string name)
         {
             SendAsync(name).Wait();
         }
@@ -124,112 +162,57 @@ namespace CrashLogger
         /// </summary>
         /// <param name="name">Any Name</param>
         /// <returns></returns>
-        public static async Task SendAsync(string name)
+        public async Task SendAsync(string name)
         {
-            CheckInit();
-
-            if (string.IsNullOrWhiteSpace(name))
+            try
             {
-                return;
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    return;
+                }
+
+                if (_list.Count == 0)
+                {
+                    return;
+                }
+
+                var n = new Crash()
+                {
+                    AppGuidId = _appGuidId,
+                    Date = DateTime.Now.ToUniversalTime(),
+                    Items = new List<CrashItem>(_list),
+                    Name = name
+                };
+
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(n);
+
+                if (await SendToApi(json) == false)
+                {
+                    SaveToFileSystem(json);
+                }
             }
-
-            if (_list.Count == 0)
+            catch (Exception)
             {
-                return;
-            }
-
-            var n = new NewCrash()
-            {
-                AppGuidId = _appGuidId,
-                Date = DateTime.Now.ToUniversalTime(),
-                Items = new List<NewCrashItem>(_list),
-                Name = name
-            };
-
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(n);
-
-            if (await SendToApi(json) == false)
-            {
-                SaveToFileSystem(json);
+                
             }
         }
 
-        /// <summary>
-        /// Send to Api without internal Logs
-        /// </summary>
-        /// <param name="name">Any Name</param>
-        /// <param name="items">Log list</param>
-        public static void Send(string name, Dictionary<string, string> items)
-        {
-            SendAsync(name, items).Wait();
-        }
-
-        /// <summary>
-        /// Send to Api without internal Logs
-        /// </summary>
-        /// <param name="name">Any Name</param>
-        /// <param name="items">Log list</param>
-        public static async Task SendAsync(string name, Dictionary<string, string> items)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                return;
-            }
-
-            if (items == null || items.Count == 0)
-            {
-                return;
-            }
-
-            var n = new NewCrash()
-            {
-                AppGuidId = _appGuidId,
-                Date = DateTime.Now.ToUniversalTime(),
-                Items = new List<NewCrashItem>(),
-                Name = name
-            };
-
-            foreach (var item in items)
-            {
-                n.Items.Add(new NewCrashItem() {
-                    DataType = CrashDataType.Text,
-                    Name = item.Key,
-                    Value = item.Value
-                });
-            }
-
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(n);
-
-            if (await SendToApi(json) == false)
-            {
-                SaveToFileSystem(json);
-            }
-        }
-        
         #endregion
 
         #endregion
 
         #region Private
 
-        private static void CheckInit()
+        private bool CheckSize(string name, string value = null, byte[] file = null)
         {
-            if (_list == null)
-            {
-                throw new Exception("CrashLogger ist not Initializes. Use Init()");
-            }
-        }
-
-        private static bool CheckSize(string name, string value = null, byte[] file = null)
-        {
-            if (name.Length > 1024)
+            if (name.Length > MaxNameLength)
             {
                 return false;
             }
 
             if (value != null)
             {
-                if (Encoding.UTF8.GetBytes(value).Length > _maxLength)
+                if (Encoding.UTF8.GetBytes(value).Length > MaxValueSize)
                 {
                     return false;
                 }
@@ -237,7 +220,7 @@ namespace CrashLogger
 
             if (file != null)
             {
-                if (file.Length > _maxLength)
+                if (file.Length > MaxValueSize)
                 {
                     return false;
                 }
@@ -246,38 +229,31 @@ namespace CrashLogger
             return true;
         }
 
-        private static async Task<bool> SendToApi(string json)
+        private async Task<bool> SendToApi(string json)
         {
             try
             {
-                while (_isSend)
-                {
-                    await Task.Delay(100);
-                }
-
-                _isSend = true;
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 var resp = await _client.PostAsync(WebApiUrl, content);
                 if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    _isSend = false;
                     return true;
                 }
                 else
                 {
+#if DEBUG
                     var error = await resp.Content.ReadAsStringAsync();
+#endif
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                var la = ex;
             }
-
-            _isSend = false;
+            
             return false;
         }
 
-        private static void SaveToFileSystem(string json)
+        private void SaveToFileSystem(string json)
         {
             if (GetTempPath() is string path)
             {
@@ -286,7 +262,7 @@ namespace CrashLogger
             }
         }
 
-        private static async void SendFromFileSystem()
+        private async void SendFromFileSystem()
         {
             if (GetTempPath() is string path)
             {
@@ -324,7 +300,7 @@ namespace CrashLogger
             }
         }
 
-        private static string GetTempPath()
+        private string GetTempPath()
         {
             try
             {
@@ -351,15 +327,15 @@ namespace CrashLogger
 
         #endregion
         
-        private class NewCrash
+        private class Crash
         {
             public string AppGuidId { get; set; }
             public string Name { get; set; }
             public DateTime Date { get; set; }
-            public List<NewCrashItem> Items { get; set; }
+            public List<CrashItem> Items { get; set; }
         }
 
-        private class NewCrashItem
+        private class CrashItem
         {
             public string Name { get; set; }
             public string Value { get; set; }
@@ -373,5 +349,5 @@ namespace CrashLogger
         }
     }
 
-
+    
 }

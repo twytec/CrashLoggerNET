@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard1.3</TargetFramework>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <Authors>TWyTec</Authors>
     <Company>TWyTec</Company>
     <Description>CrashLogger is a simple online logger for your Project</Description>
@@ -11,6 +11,9 @@
     <PackageProjectUrl>https://crashlogger.com/</PackageProjectUrl>
     <PackageTags>logs, logger</PackageTags>
     <PackageIconUrl>https://crashlogger.com/clicon.png</PackageIconUrl>
+    <PackageLicenseUrl>https://github.com/twytec/CrashLoggerNET/blob/master/LICENSE</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/twytec/CrashLoggerNET</RepositoryUrl>
+    <Version>1.0.3</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
