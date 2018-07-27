@@ -39,10 +39,10 @@ namespace CrashLogger
             _appGuidId = appGuidId;
             _list = new System.Collections.Concurrent.BlockingCollection<CrashItem>
             {
-                new CrashItem() { DataType = CrashDataType.File, Name = "OSDescription", Value = RuntimeInformation.OSDescription },
-                new CrashItem() { DataType = CrashDataType.File, Name = "FrameworkDescription", Value = RuntimeInformation.FrameworkDescription },
-                new CrashItem() { DataType = CrashDataType.File, Name = "OSArchitecture", Value = RuntimeInformation.OSArchitecture.ToString("g") },
-                new CrashItem() { DataType = CrashDataType.File, Name = "ProcessArchitecture", Value = RuntimeInformation.ProcessArchitecture.ToString("g") },
+                new CrashItem() { DataType = CrashDataType.Text, Name = "OSDescription", Value = RuntimeInformation.OSDescription },
+                new CrashItem() { DataType = CrashDataType.Text, Name = "FrameworkDescription", Value = RuntimeInformation.FrameworkDescription },
+                new CrashItem() { DataType = CrashDataType.Text, Name = "OSArchitecture", Value = RuntimeInformation.OSArchitecture.ToString("g") },
+                new CrashItem() { DataType = CrashDataType.Text, Name = "ProcessArchitecture", Value = RuntimeInformation.ProcessArchitecture.ToString("g") },
             };
             
             if (_client == null)

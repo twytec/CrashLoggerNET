@@ -13,7 +13,7 @@
     <PackageIconUrl>https://crashlogger.com/clicon.png</PackageIconUrl>
     <PackageLicenseUrl>https://github.com/twytec/CrashLoggerNET/blob/master/LICENSE</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/twytec/CrashLoggerNET</RepositoryUrl>
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

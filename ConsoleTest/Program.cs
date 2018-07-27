@@ -8,7 +8,7 @@ namespace ConsoleTest
     {
         static void Main(string[] args)
         {
-            CrashLogger.GlobalLogger.Init("263dbbed-e4b5-4f29-99f0-50367614f5b3");
+            CrashLogger.GlobalLogger.Init("01ad3554-6271-4c2d-ba6b-9d963b0e9ef5");
 
             CrashLogger.GlobalLogger.Log.Add("Name1", "Value1");
 
@@ -28,7 +28,7 @@ namespace ConsoleTest
 
             //Or
 
-            CrashLogger.Logger log = new CrashLogger.Logger("263dbbed-e4b5-4f29-99f0-50367614f5b3");
+            CrashLogger.Logger log = new CrashLogger.Logger("01ad3554-6271-4c2d-ba6b-9d963b0e9ef5");
             log.Add("Name1", "Value1");
             log.Send("Test");
 
